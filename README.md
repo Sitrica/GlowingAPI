@@ -24,7 +24,6 @@ In your `pom.xml` add:
 In your `build.gradle` add: 
 ```groovy
 repositories {
-  jcenter()
   maven {
     url 'https://jitpack.io'
   }
