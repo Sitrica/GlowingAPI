@@ -24,13 +24,13 @@ In your `pom.xml` add:
 In your `build.gradle` add: 
 ```groovy
 repositories {
-  maven {
-    url 'https://jitpack.io'
-  }
+    maven {
+        url 'https://jitpack.io'
+    }
 }
 
 dependencies {
-  compile 'com.github.TheLimeGlass:SkriptHub-Java-API:1.0.0'
+    compile 'com.github.TheLimeGlass:SkriptHub-Java-API:1.0.0'
 }
 ```
 
@@ -41,6 +41,7 @@ public class ExamplePlugin extends JavaPlugin {
 	private static ExamplePlugin instance;
 	private GlowingAPI glowing;
 
+	@Override
 	public void onEnable() {
 		instance = this;
 		glowing = new GlowingAPI(instance);
