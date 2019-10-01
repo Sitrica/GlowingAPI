@@ -1,4 +1,5 @@
 # GlowingAPI v1.0.0
+## Requires ProtocolLib
 An API for handling client side glowing effects.
 
 GlowingAPI currently uses Jitpack https://jitpack.io/#TheLimeGlass/GlowingAPI/1.0.0
