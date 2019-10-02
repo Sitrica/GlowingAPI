@@ -30,7 +30,7 @@ repositories {
 }
 
 dependencies {
-    compile 'com.github.TheLimeGlass:SkriptHub-Java-API:1.0.0'
+    compile 'com.github.TheLimeGlass:GlowingAPI:1.0.0'
 }
 ```
 
