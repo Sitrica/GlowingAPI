@@ -87,7 +87,7 @@ public class GlowingAPI {
 		for (Player receiver : receivers) {
 			WrapperPlayServerEntityMetadata packet = new WrapperPlayServerEntityMetadata();
 			WrappedDataWatcher watcher = new WrappedDataWatcher();
-			watcher.setObject(0, Registry.get(Byte.class), 0x40);
+			watcher.setObject(0, Registry.get(Byte.class), (byte) 0x40);
 
 			packet.setMetadata(watcher.getWatchableObjects());
 			packet.setEntityID(entity.getEntityId());
@@ -144,7 +144,7 @@ public class GlowingAPI {
 				return;
 			WrapperPlayServerEntityMetadata packet = new WrapperPlayServerEntityMetadata();
 			WrappedDataWatcher watcher = new WrappedDataWatcher();
-			watcher.setObject(0, Registry.get(Byte.class), 0);
+			watcher.setObject(0, Registry.get(Byte.class), (byte) 0);
 
 			packet.setMetadata(watcher.getWatchableObjects());
 			packet.setEntityID(entity.getEntityId());
