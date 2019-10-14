@@ -1,4 +1,4 @@
-package me.limeglass.glowing;
+package com.sitrica.glowing;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -17,8 +17,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import com.comphenix.protocol.wrappers.WrappedDataWatcher;
 import com.comphenix.protocol.wrappers.WrappedDataWatcher.Registry;
-
-import me.limeglass.glowing.packets.WrapperPlayServerEntityMetadata;
+import com.sitrica.glowing.packets.WrapperPlayServerEntityMetadata;
 
 /**
  * @author LimeGlass (https://github.com/TheLimeGlass)

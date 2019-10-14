@@ -1,4 +1,4 @@
-package me.limeglass.glowing.packets;
+package com.sitrica.glowing.packets;
 
 /**
  * PacketWrapper - ProtocolLib wrappers for Minecraft packets
