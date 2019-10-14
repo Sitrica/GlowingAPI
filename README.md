@@ -2,7 +2,7 @@
 ### Requires ProtocolLib https://www.spigotmc.org/resources/protocollib.1997/
 An API for handling client side glowing effects.
 
-GlowingAPI currently uses Jitpack https://jitpack.io/#TheLimeGlass/GlowingAPI/1.0.0
+GlowingAPI currently uses Jitpack https://jitpack.io/#Sitrica/GlowingAPI/1.0.0
 ### Maven
 In your `pom.xml` add:
 ```xml
@@ -14,7 +14,7 @@ In your `pom.xml` add:
 </repositories>
 
 <dependency>
-    <groupId>com.github.TheLimeGlass</groupId>
+    <groupId>com.github.Sitrica</groupId>
     <artifactId>GlowingAPI</artifactId>
     <version>1.0.0</version>
 </dependency>
@@ -30,7 +30,7 @@ repositories {
 }
 
 dependencies {
-    compile 'com.github.TheLimeGlass:GlowingAPI:1.0.0'
+    compile 'com.github.Sitrica:GlowingAPI:1.0.0'
 }
 ```
 
