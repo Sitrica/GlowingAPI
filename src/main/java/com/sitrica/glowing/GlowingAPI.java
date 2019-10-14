@@ -1,11 +1,11 @@
 package com.sitrica.glowing;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -24,7 +24,7 @@ import com.sitrica.glowing.packets.WrapperPlayServerEntityMetadata;
  */
 public class GlowingAPI {
 
-	private final Map<UUID, UUID> glowing = new HashMap<>(); // Receiver, Entity.
+	private final Map<Player, Entity> glowing = new HashMap<>(); // Receiver, Entity.
 	private final JavaPlugin plugin;
 
 	/**
@@ -46,23 +46,42 @@ public class GlowingAPI {
 	 * @return boolean if the check was successful.
 	 */
 	public boolean isGlowingFor(Entity entity, Player receiver) {
-		Optional<UUID> optional = Optional.ofNullable(glowing.get(receiver.getUniqueId()));
+		Optional<Entity> optional = Optional.ofNullable(glowing.get(receiver));
 		if (!optional.isPresent())
 			return false;
-		return optional.get().equals(entity.getUniqueId());
+		return optional.get().equals(entity);
 	}
 
 	/**
-	 * Grab all the recipicants of a glowing effect on the targeted entity.
+	 * @return Map of which entities and glowing to which players.
+	 */
+	public Map<Player, Entity> getGlowingMap() {
+		return Collections.unmodifiableMap(glowing);
+	}
+
+	/**
+	 * Grab all the recipients of a glowing effect on the targeted entity.
 	 * 
-	 * @param entity The entity to search for recipicants on.
+	 * @param entity The entity to search for recipients on.
 	 * @return Set<Player> of all players that see a glowing effect on target entity.
 	 */
 	public Set<Player> getGlowingFor(Entity entity) {
 		return glowing.entrySet().stream()
-				.filter(entry -> entry.getValue().equals(entity.getUniqueId()))
-				.map(entry -> Bukkit.getPlayer(entry.getKey()))
-				.filter(player -> player != null)
+				.filter(entry -> entry.getValue().getUniqueId().equals(entity.getUniqueId()))
+				.map(entry -> entry.getKey())
+				.collect(Collectors.toSet());
+	}
+
+	/**
+	 * Grab all the entities glowing for a player.
+	 * 
+	 * @param player The Player to grab all glowing entities of.
+	 * @return Set<Entity> of all entities glowing for the player.
+	 */
+	public Set<Entity> getGlowingEntities(Player player) {
+		return glowing.entrySet().stream()
+				.filter(entry -> entry.getKey().getUniqueId().equals(player.getUniqueId()))
+				.map(entry -> entry.getValue())
 				.collect(Collectors.toSet());
 	}
 
@@ -92,7 +111,7 @@ public class GlowingAPI {
 			packet.setEntityID(entity.getEntityId());
 			packet.sendPacket(receiver);
 
-			glowing.put(receiver.getUniqueId(), entity.getUniqueId());
+			glowing.put(receiver, entity);
 		}
 	}
 
@@ -139,7 +158,7 @@ public class GlowingAPI {
 	 */
 	public void stopGlowing(Entity entity, Player... receivers) {
 		for (Player receiver : receivers) {
-			if (!glowing.containsKey(receiver.getUniqueId()))
+			if (!glowing.containsKey(receiver))
 				return;
 			WrapperPlayServerEntityMetadata packet = new WrapperPlayServerEntityMetadata();
 			WrappedDataWatcher watcher = new WrappedDataWatcher();
@@ -149,7 +168,7 @@ public class GlowingAPI {
 			packet.setEntityID(entity.getEntityId());
 			packet.sendPacket(receiver);
 
-			glowing.remove(receiver.getUniqueId());
+			glowing.remove(receiver);
 		}
 	}
 
