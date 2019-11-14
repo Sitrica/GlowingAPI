@@ -27,7 +27,9 @@ dependencies {
 Getting a Github token:
 
 1.) Go into your account settings on Github and create a personal token with the read:packages scope checked.
+
 2.) Generate that key, and now go add a System Environment Variable named GITHUB_PACKAGES_KEY
+
 3.) Restart computer or if using Chocolatey type `refreshenv`
 
 Note: you can just directly put your token as the password, but we highly discourage that.
