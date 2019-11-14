@@ -11,17 +11,17 @@ Maven requires setting up profiles and defining the token else where https://hel
 In your `build.gradle` add: 
 ```groovy
 repositories {
-    maven {
-        url 'https://maven.pkg.github.com/Sitrica/GlowingAPI/'
-        credentials {
-        	username = "Sitrica"
+	maven {
+		url 'https://maven.pkg.github.com/Sitrica/GlowingAPI/'
+		credentials {
+			username = "Sitrica"
 			password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_PACKAGES_KEY")
 		}
-    }
+	}
 }
 
 dependencies {
-    compile (group: 'com.sitrica', name: 'GlowingAPI', version: '1.0.0')
+	compile (group: 'com.sitrica', name: 'GlowingAPI', version: '1.0.0')
 }
 ```
 Getting a Github token:
