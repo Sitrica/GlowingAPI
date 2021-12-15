@@ -31,6 +31,7 @@ dependencies {
 	// Nullable annotation
 	implementation (group: 'org.eclipse.jdt', name: 'org.eclipse.jdt.annotation', version: '2.2.600')
 
+<<<<<<< HEAD
 	// Spigot/Bukkit
 	implementation (group: 'org.spigotmc', name: 'spigot-api', version: '1.17.1-R0.1-SNAPSHOT')
 
@@ -38,6 +39,13 @@ dependencies {
 	implementation (group: "com.comphenix.protocol", name: "ProtocolLib", version: "4.6.1-SNAPSHOT") {
 		transitive = false
 	}
+=======
+	// Spigot
+	implementation (group: 'org.spigotmc', name: 'spigot-api', version: '1.17.1-R0.1-SNAPSHOT')
+
+	// ProtocolLib
+	implementation (group: "com.comphenix.protocol", name: "ProtocolLib", version: "4.7.0");
+>>>>>>> b5371045ba9ab0edb1092578b9933defced2df89
 
 }
 
