@@ -25,7 +25,7 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
     - name: Build with Gradle
-      run: ./gradlew shadow
+      run: ./gradlew clean build
     - name: Upload Nightly Build
       uses: actions/upload-artifact@v2
       if: success()
