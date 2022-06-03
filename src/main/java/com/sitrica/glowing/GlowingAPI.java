@@ -2,7 +2,7 @@ package com.sitrica.glowing;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -12,20 +12,46 @@ import java.util.stream.Collectors;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.IllegalPluginAccessException;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.comphenix.protocol.wrappers.WrappedDataWatcher;
 import com.comphenix.protocol.wrappers.WrappedDataWatcher.Registry;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalCause;
+import com.google.common.cache.RemovalListener;
+import com.google.common.cache.RemovalNotification;
+import com.google.common.collect.Sets;
 import com.sitrica.glowing.packets.WrapperPlayServerEntityMetadata;
 
 /**
  * @author LimeGlass (https://github.com/TheLimeGlass)
  */
-public class GlowingAPI {
+public class GlowingAPI implements Listener {
 
-	private final Map<Player, Entity> glowing = new HashMap<>(); // Receiver, Entity.
+	private final Cache<Player, Set<Entity>> cache = CacheBuilder.newBuilder()
+			.expireAfterAccess(10, TimeUnit.HOURS)
+			.removalListener(new RemovalListener<Player, Set<Entity>>() {
+				@Override
+				public void onRemoval(RemovalNotification<Player, Set<Entity>> notification) {
+					if (notification.getCause() == RemovalCause.EXPIRED && notification.getKey().isOnline()) {
+						cache.put(notification.getKey(), notification.getValue());
+						return;
+					}
+				}
+			})
+			.build();
+	//private final Map<Player, Entity> glowing = new HashMap<>(); // Receiver, Entity.
 	private final JavaPlugin plugin;
+
+	@EventHandler
+	public void onPlayerLeave(PlayerQuitEvent event) {
+		cache.invalidate(event.getPlayer());
+	}
 
 	/**
 	 * Create a new instance of GlowingAPI for the defined plugin.
@@ -34,6 +60,7 @@ public class GlowingAPI {
 	 */
 	public GlowingAPI(JavaPlugin plugin) {
 		this.plugin = plugin;
+		Bukkit.getPluginManager().registerEvents(this, plugin);
 		if (!Bukkit.getPluginManager().isPluginEnabled("ProtocolLib"))
 			throw new IllegalPluginAccessException("ProtocolLib needs to be loaded before GlowingAPI.");
 	}
@@ -46,17 +73,17 @@ public class GlowingAPI {
 	 * @return boolean if the check was successful.
 	 */
 	public boolean isGlowingFor(Entity entity, Player receiver) {
-		Optional<Entity> optional = Optional.ofNullable(glowing.get(receiver));
+		Optional<Set<Entity>> optional = Optional.ofNullable(cache.getIfPresent(receiver));
 		if (!optional.isPresent())
 			return false;
-		return optional.get().equals(entity);
+		return optional.get().contains(entity);
 	}
 
 	/**
 	 * @return Map of which entities and glowing to which players.
 	 */
-	public Map<Player, Entity> getGlowingMap() {
-		return Collections.unmodifiableMap(glowing);
+	public Map<Player, Set<Entity>> getGlowingMap() {
+		return Collections.unmodifiableMap(cache.getAllPresent(Sets.newHashSet(Bukkit.getOfflinePlayers())));
 	}
 
 	/**
@@ -66,8 +93,8 @@ public class GlowingAPI {
 	 * @return Set<Player> of all players that see a glowing effect on target entity.
 	 */
 	public Set<Player> getGlowingFor(Entity entity) {
-		return glowing.entrySet().stream()
-				.filter(entry -> entry.getValue().getUniqueId().equals(entity.getUniqueId()))
+		return getGlowingMap().entrySet().stream()
+				.filter(entry -> entry.getValue().stream().anyMatch(e -> e.getUniqueId().equals(entity.getUniqueId())))
 				.map(entry -> entry.getKey())
 				.collect(Collectors.toSet());
 	}
@@ -79,9 +106,9 @@ public class GlowingAPI {
 	 * @return Set<Entity> of all entities glowing for the player.
 	 */
 	public Set<Entity> getGlowingEntities(Player player) {
-		return glowing.entrySet().stream()
+		return getGlowingMap().entrySet().parallelStream()
 				.filter(entry -> entry.getKey().getUniqueId().equals(player.getUniqueId()))
-				.map(entry -> entry.getValue())
+				.flatMap(entry -> entry.getValue().stream())
 				.collect(Collectors.toSet());
 	}
 
@@ -104,14 +131,16 @@ public class GlowingAPI {
 	public void setGlowing(Entity entity, Player... receivers) {
 		for (Player receiver : receivers) {
 			WrapperPlayServerEntityMetadata packet = new WrapperPlayServerEntityMetadata();
-			WrappedDataWatcher watcher = new WrappedDataWatcher();
+			WrappedDataWatcher watcher = WrappedDataWatcher.getEntityWatcher(entity);
 			watcher.setObject(0, Registry.get(Byte.class), (byte) 0x40);
 
 			packet.setMetadata(watcher.getWatchableObjects());
 			packet.setEntityID(entity.getEntityId());
 			packet.sendPacket(receiver);
 
-			glowing.put(receiver, entity);
+			Set<Entity> entities = Optional.ofNullable(cache.getIfPresent(receiver)).orElse(new HashSet<>());
+			entities.add(entity);
+			cache.put(receiver, entities);
 		}
 	}
 
@@ -137,7 +166,7 @@ public class GlowingAPI {
 	 */
 	public <T extends Entity> void setTimedGlowing(long delay, TimeUnit unit, Collection<T> entities, Player... receivers) {
 		setGlowing(entities, receivers);
-		Bukkit.getScheduler().runTaskLater(plugin, () -> stopGlowing(entities, receivers), unit.toSeconds(delay) * 20);
+		Bukkit.getScheduler().runTaskLater(plugin, () -> stopGlowing(entities, receivers), unit.toSeconds(delay) / 20);
 	}
 
 	/**
@@ -158,17 +187,20 @@ public class GlowingAPI {
 	 */
 	public void stopGlowing(Entity entity, Player... receivers) {
 		for (Player receiver : receivers) {
-			if (!glowing.containsKey(receiver))
+			if (!isGlowingFor(entity, receiver))
 				return;
 			WrapperPlayServerEntityMetadata packet = new WrapperPlayServerEntityMetadata();
-			WrappedDataWatcher watcher = new WrappedDataWatcher();
+			WrappedDataWatcher watcher = WrappedDataWatcher.getEntityWatcher(entity);
 			watcher.setObject(0, Registry.get(Byte.class), (byte) 0);
 
 			packet.setMetadata(watcher.getWatchableObjects());
 			packet.setEntityID(entity.getEntityId());
 			packet.sendPacket(receiver);
 
-			glowing.remove(receiver);
+			Set<Entity> entities = Optional.ofNullable(cache.getIfPresent(receiver)).orElse(new HashSet<>());
+			entities.remove(entity);
+			if (entities.isEmpty())
+				cache.invalidate(receiver);
 		}
 	}
 
