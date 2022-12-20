@@ -95,7 +95,10 @@ public class GlowingAPI implements Listener {
 					// The packet is already a glowing update.
 					if (existing == 0x40)
 						return;
-					sendGlowing(entity, player);
+					// Finally if packet does not contain glowing data, add it
+					if ((existing & (1 << 6)) == 0){
+						sendGlowing(entity, player);
+					}
 				}
 			}
 		});
@@ -175,14 +178,18 @@ public class GlowingAPI implements Listener {
 
 	/**
 	 * Sends the glowing packet not caring about overriding.
-	 * 
+	 *
 	 * @param entity The entity to apply glowing to.
 	 * @param receiver The player that sees the effects of glowing.
 	 */
 	private void sendGlowing(Entity entity, Player receiver) {
 		WrapperPlayServerEntityMetadata wrapper = new WrapperPlayServerEntityMetadata();
 		WrappedDataWatcher watcher = WrappedDataWatcher.getEntityWatcher(entity);
-		watcher.setObject(0, Registry.get(Byte.class), (byte) 0x40);
+
+		byte data = watcher.getByte(0);
+		data |= 1 << 6;
+
+		watcher.setObject(0, Registry.get(Byte.class), data);
 
 		wrapper.setMetadata(watcher.getWatchableObjects());
 		wrapper.setEntityID(entity.getEntityId());
