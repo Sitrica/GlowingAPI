@@ -94,29 +94,6 @@ public class GlowingAPI implements Listener {
 							.anyMatch(b -> b == (byte) 0x40))
 						return;
 					wrapper.addToDataValueCollection(new WrappedDataValue(0, Registry.get(Byte.class), (byte) 0x40));
-//						glowing = false;
-//						watcher.setObject(0, Registry.get(Byte.class), (byte) 0x40);
-//						wrapper.setDataValueCollection(watcher.getWatchableObjects());
-//						return;
-//					}
-//					byte existing = watcher.getByte(0);
-//					// The byte is already nothing. (We know there is a potential byte value based on the 0 in the index condition above)
-//					if (existing == 0) {
-//						watcher.setObject(0, Registry.get(Byte.class), (byte) 0x40);
-//						wrapper.setDataValueCollection(watcher.getWatchableObjects());
-//						return;
-//					}
-//					// The packet is already a glowing update.
-//					if (existing == 0x40)
-//						return;
-//					if (!MinecraftVersion.TRAILS_AND_TAILS.atOrAbove()) {
-//						sendGlowing(entity, player);
-//						return;
-//					}
-//					// Finally if packet does not contain glowing data, add it
-//					if ((existing & (1 << 6)) == 0)
-//						sendGlowing(entity, player);
-
 				}
 			}
 		});
