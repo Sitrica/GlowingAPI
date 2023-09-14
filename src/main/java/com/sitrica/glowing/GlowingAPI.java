@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -24,8 +25,11 @@ import com.comphenix.protocol.ProtocolManager;
 import com.comphenix.protocol.events.ListenerPriority;
 import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketEvent;
+import com.comphenix.protocol.utility.MinecraftVersion;
+import com.comphenix.protocol.wrappers.WrappedDataValue;
 import com.comphenix.protocol.wrappers.WrappedDataWatcher;
 import com.comphenix.protocol.wrappers.WrappedDataWatcher.Registry;
+import com.comphenix.protocol.wrappers.WrappedWatchableObject;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalCause;
@@ -64,10 +68,12 @@ public class GlowingAPI implements Listener {
 	 * 
 	 * @param plugin JavaPlugin that tasks will be allocated on.
 	 */
-	public GlowingAPI(JavaPlugin plugin) {
+	public GlowingAPI(JavaPlugin plugin) throws IllegalPluginAccessException {
 		this.plugin = plugin;
 		if (!Bukkit.getPluginManager().isPluginEnabled("ProtocolLib"))
-			throw new IllegalPluginAccessException("ProtocolLib needs to be loaded before GlowingAPI.");
+			throw new IllegalPluginAccessException("ProtocolLib needs to be loaded and enabled before GlowingAPI.");
+		if (!MinecraftVersion.FEATURE_PREVIEW_UPDATE.atOrAbove())
+			throw new IllegalPluginAccessException("GlowingAPI only supports 1.19.3+");
 		Bukkit.getPluginManager().registerEvents(this, plugin);
 		protocolManager = ProtocolLibrary.getProtocolManager();
 		// Metadata changes frequently on entities, so when it gets updated we'll add our glowing state to ensure it's not overriden by updates.
@@ -77,25 +83,40 @@ public class GlowingAPI implements Listener {
 				WrapperPlayServerEntityMetadata wrapper = new WrapperPlayServerEntityMetadata(event.getPacket());
 				Entity entity = wrapper.getEntity(event);
 				Player player = event.getPlayer();
-				WrappedDataWatcher watcher = new WrappedDataWatcher(wrapper.getMetadata());
 				if (isGlowingFor(entity, player)) {
-					// There is nothing to worry about overriding.
-					if (!watcher.getIndexes().contains(0)) {
-						watcher.setObject(0, Registry.get(Byte.class), (byte) 0x40);
-						wrapper.setMetadata(watcher.getWatchableObjects());
+					WrappedDataWatcher watcher = WrappedDataWatcher.getEntityWatcher(entity);
+					// Already glowing
+					if (watcher.getWatchableObjects().stream()
+							.map(WrappedWatchableObject::getValue)
+							.filter(Byte.class::isInstance)
+							.map(Byte.class::cast)
+							.filter(Objects::nonNull)
+							.anyMatch(b -> b == (byte) 0x40))
 						return;
-					}
-					byte existing = watcher.getByte(0);
-					// The byte is already nothing. (We know there is a potential byte value based on the 0 in the index condition above)
-					if (existing == 0) {
-						watcher.setObject(0, Registry.get(Byte.class), (byte) 0x40);
-						wrapper.setMetadata(watcher.getWatchableObjects());
-						return;
-					}
-					// The packet is already a glowing update.
-					if (existing == 0x40)
-						return;
-					sendGlowing(entity, player);
+					wrapper.addToDataValueCollection(new WrappedDataValue(0, Registry.get(Byte.class), (byte) 0x40));
+//						glowing = false;
+//						watcher.setObject(0, Registry.get(Byte.class), (byte) 0x40);
+//						wrapper.setDataValueCollection(watcher.getWatchableObjects());
+//						return;
+//					}
+//					byte existing = watcher.getByte(0);
+//					// The byte is already nothing. (We know there is a potential byte value based on the 0 in the index condition above)
+//					if (existing == 0) {
+//						watcher.setObject(0, Registry.get(Byte.class), (byte) 0x40);
+//						wrapper.setDataValueCollection(watcher.getWatchableObjects());
+//						return;
+//					}
+//					// The packet is already a glowing update.
+//					if (existing == 0x40)
+//						return;
+//					if (!MinecraftVersion.TRAILS_AND_TAILS.atOrAbove()) {
+//						sendGlowing(entity, player);
+//						return;
+//					}
+//					// Finally if packet does not contain glowing data, add it
+//					if ((existing & (1 << 6)) == 0)
+//						sendGlowing(entity, player);
+
 				}
 			}
 		});
@@ -182,9 +203,10 @@ public class GlowingAPI implements Listener {
 	private void sendGlowing(Entity entity, Player receiver) {
 		WrapperPlayServerEntityMetadata wrapper = new WrapperPlayServerEntityMetadata();
 		WrappedDataWatcher watcher = WrappedDataWatcher.getEntityWatcher(entity);
-		watcher.setObject(0, Registry.get(Byte.class), (byte) 0x40);
-
-		wrapper.setMetadata(watcher.getWatchableObjects());
+		// Collect if the entity is already glowing.
+		byte data = watcher.getByte(0);
+		data |= 1 << 6;
+		wrapper.addToDataValueCollection(new WrappedDataValue(0, Registry.get(Byte.class), data));
 		wrapper.setEntityID(entity.getEntityId());
 		wrapper.sendPacket(receiver);
 	}
@@ -232,20 +254,17 @@ public class GlowingAPI implements Listener {
 	 */
 	public void stopGlowing(Entity entity, Player... receivers) {
 		for (Player receiver : receivers) {
-			WrapperPlayServerEntityMetadata wrapper = new WrapperPlayServerEntityMetadata();
-			WrappedDataWatcher watcher = WrappedDataWatcher.getEntityWatcher(entity);
-			watcher.setObject(0, Registry.get(Byte.class), (byte) 0);
-
-			wrapper.setMetadata(watcher.getWatchableObjects());
-			wrapper.setEntityID(entity.getEntityId());
-			wrapper.sendPacket(receiver);
-
 			Set<Entity> entities = Optional.ofNullable(cache.getIfPresent(receiver)).orElse(new HashSet<>());
 			entities.remove(entity);
 			if (entities.isEmpty())
 				cache.invalidate(receiver);
 			else
 				cache.put(receiver, entities);
+
+			WrapperPlayServerEntityMetadata wrapper = new WrapperPlayServerEntityMetadata();
+			wrapper.addToDataValueCollection(new WrappedDataValue(0, Registry.get(Byte.class), (byte) 0));
+			wrapper.setEntityID(entity.getEntityId());
+			wrapper.sendPacket(receiver);
 		}
 	}
 

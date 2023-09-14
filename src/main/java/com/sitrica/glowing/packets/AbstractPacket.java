@@ -1,26 +1,5 @@
 package com.sitrica.glowing.packets;
 
-/**
- * PacketWrapper - ProtocolLib wrappers for Minecraft packets
- * Copyright (C) dmulloy2 <http://dmulloy2.net>
- * Copyright (C) Kristian S. Strangeland
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
-import java.lang.reflect.InvocationTargetException;
-
 import org.bukkit.entity.Player;
 
 import com.comphenix.protocol.PacketType;
@@ -65,12 +44,8 @@ public abstract class AbstractPacket {
 	 * @throws RuntimeException If the packet cannot be sent.
 	 */
 	public void sendPacket(Player receiver) {
-		try {
-			ProtocolLibrary.getProtocolManager().sendServerPacket(receiver,
-					getHandle());
-		} catch (InvocationTargetException e) {
-			throw new RuntimeException("Cannot send packet.", e);
-		}
+		ProtocolLibrary.getProtocolManager().sendServerPacket(receiver,
+				getHandle());
 	}
 
 	/**
@@ -91,7 +66,7 @@ public abstract class AbstractPacket {
 	@Deprecated
 	public void recievePacket(Player sender) {
 		try {
-			ProtocolLibrary.getProtocolManager().recieveClientPacket(sender,
+			ProtocolLibrary.getProtocolManager().receiveClientPacket(sender,
 					getHandle());
 		} catch (Exception e) {
 			throw new RuntimeException("Cannot recieve packet.", e);
@@ -106,7 +81,7 @@ public abstract class AbstractPacket {
 	 */
 	public void receivePacket(Player sender) {
 		try {
-			ProtocolLibrary.getProtocolManager().recieveClientPacket(sender,
+			ProtocolLibrary.getProtocolManager().receiveClientPacket(sender,
 					getHandle());
 		} catch (Exception e) {
 			throw new RuntimeException("Cannot receive packet.", e);

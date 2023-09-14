@@ -23,11 +23,14 @@ import java.util.List;
 
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.eclipse.jdt.annotation.Nullable;
 
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
+import com.comphenix.protocol.wrappers.WrappedDataValue;
 import com.comphenix.protocol.wrappers.WrappedWatchableObject;
+import com.google.common.collect.Lists;
 
 public class WrapperPlayServerEntityMetadata extends AbstractPacket {
 
@@ -80,6 +83,39 @@ public class WrapperPlayServerEntityMetadata extends AbstractPacket {
 	 */
 	public Entity getEntity(PacketEvent event) {
 		return getEntity(event.getPlayer().getWorld());
+	}
+
+	/**
+	 * @return The current data value collection
+	 */
+	@Nullable
+	public List<WrappedDataValue> getDataValueCollection() {
+		return handle.getDataValueCollectionModifier().read(0);
+	}
+
+	/**
+	 * Add some data values to the data value collection.
+	 * 
+	 * @param values the {@link WrappedDataValue}s to add.
+	 */
+	public void addToDataValueCollection(WrappedDataValue... values) {
+		List<WrappedDataValue> valuesToAdd = Lists.newArrayList(values);
+		List<WrappedDataValue> collection = getDataValueCollection();
+		if (collection == null || collection.isEmpty()) {
+			collection = valuesToAdd;
+		} else {
+			collection.addAll(valuesToAdd);
+		}
+		setDataValueCollection(collection);
+	}
+
+	/**
+	 * Set data value collection.
+	 * 
+	 * @param value - new value.
+	 */
+	public void setDataValueCollection(List<WrappedDataValue> value) {
+		handle.getDataValueCollectionModifier().write(0, value);
 	}
 
 	/**
